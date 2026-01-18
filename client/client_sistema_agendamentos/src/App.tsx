@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Login } from "./components/Login";
 import { ClientLogin } from './components/ClientLogin';
+import { ProfessionalLogin } from './components/ProfessionalLogin';
 import { Toaster } from "./components/ui/sonner";
+import { ProfessionalDashboard } from './components/ProfessionalDashboard';
 
 type UserType = 'professional' | 'client' | null;
 type AppView = 'select' | 'professional-login' | 'professional-dashboard' | 'client-login' | 'client-booking';
@@ -23,6 +25,10 @@ function App() {
     setView('client-booking');
   };
 
+  const handleProfessionalLogin = () => {
+    setView('professional-dashboard');
+  };
+
   const handleBack = () => {
     setUserType(null);
     setView('select');
@@ -34,6 +40,10 @@ function App() {
       {view === 'client-login' && (
         <ClientLogin onBack={handleBack} onLogin={handleClientLogin} />
       )}
+      {view === 'professional-login' && (
+        <ProfessionalLogin onBack={handleBack} onLogin={handleProfessionalLogin} />
+      )}
+      {view === 'professional-dashboard' && <ProfessionalDashboard onBack={handleBack} />}
       <Toaster />
     </>
   );

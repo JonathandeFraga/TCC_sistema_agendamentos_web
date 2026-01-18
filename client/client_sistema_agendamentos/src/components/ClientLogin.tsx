@@ -26,7 +26,7 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
     e.preventDefault();
     
     if (!loginEmail || !loginPassword) {
-      toast.error("Favor preencher todos os campos");
+      toast.error("Favor preencher todos os campos.");
       return;
     }
 
@@ -34,7 +34,7 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
     
     setTimeout(() => {
       setIsLoading(false);
-      toast.success("Login realizado com sucesso!");
+      toast.success("Login realizado com sucesso.");
       onLogin();
     }, 1000);
   };

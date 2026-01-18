@@ -1,5 +1,4 @@
 import { Sparkles, User } from "lucide-react";
-import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 
 interface LoginProps {
@@ -16,8 +15,8 @@ export function Login({ onSelectUserType }: LoginProps) {
               <Sparkles className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="text-pink-600">Fernanda Fraga Nails</h1>
-          <p className="text-gray-600">Sistema de Agendamento</p>
+          <h1 className="text-pink-600">Nails</h1>
+          <p className="text-gray-600">Booking Service</p>
         </div>
 
         <div className="space-y-4">
