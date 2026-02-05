@@ -10,7 +10,7 @@ export class LoginProfissionalService {
         const loginProfissional = await this.prisma.loginProfissional.create({
             data
         });
-
-        return loginProfissional;
+        const ak = "OK";
+        return ak;
     }
 }

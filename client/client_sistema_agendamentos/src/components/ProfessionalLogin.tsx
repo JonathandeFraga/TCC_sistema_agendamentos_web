@@ -8,8 +8,8 @@ import { toast } from "sonner";
 import axios from "axios";
 
 interface ProfessionalLoginProps {
-    onBack: () => void;
-    onLogin: () => void;
+  onBack: () => void;
+  onLogin: () => void;
 }
 
 const api = axios.create({ baseURL: 'http://localhost:3000' });
@@ -20,22 +20,40 @@ export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if(!phone || !password) {
-            toast.error("Favor preencher todos os campos.");
-            return;
+          toast.error("Favor preencher todos os campos.");
+          return;
         }
 
         setIsLoading(true);
 
         // Simulação de Login
-        setTimeout(() => {
+        /*setTimeout(() => {
             setIsLoading(false);
             toast.success("Login realizado com sucesso.");
             onLogin();
-        }, 1000);
+        }, 1000);*/
+
+        try {
+          const response = await api.post('/login-profissional', {
+            fone: phone,
+            senha: password,
+            nome: 'Jonathan'
+          });
+
+          console.log(response.data);
+
+          toast.success("Login realizado com sucesso.");
+          onLogin();
+        } catch(error: any) {
+          console.log(error);
+          toast.error("Falha no login. Verifique telefone e senha.");
+        } finally {
+          setIsLoading(false)
+        }
     };
 
     return (
