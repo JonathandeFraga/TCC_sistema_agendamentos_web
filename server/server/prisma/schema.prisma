@@ -15,14 +15,14 @@ datasource db {
 
 model loginProfissional {
   id        Int @id @default(autoincrement())
-  fone      String
+  fone      String @unique
   senha     String
   nome      String
 }
 
 model loginCliente {
   id        Int @id @default(autoincrement())
-  fone      String
+  fone      String @unique
   senha     String
   nome      String
 }

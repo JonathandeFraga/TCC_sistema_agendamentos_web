@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { loginProfissionalDto } from './dto/login-profissional.dto';
 import { PrismaService } from 'src/database/prisma.service';
 
@@ -6,11 +6,15 @@ import { PrismaService } from 'src/database/prisma.service';
 export class LoginProfissionalService {
 
     constructor (private prisma: PrismaService) {};
-    async create (data: loginProfissionalDto) {
-        const loginProfissional = await this.prisma.loginProfissional.create({
-            data
+    async find (data: loginProfissionalDto) {
+        const { fone, senha } = data;
+
+        const user = await this.prisma.loginProfissional.findUnique({
+            where: { fone },
+            select: { id: true, fone: true, senha: true, nome: true },
         });
-        const ak = "OK";
-        return ak;
+
+        if (!user) throw new UnauthorizedException("Credenciais inválidas");
+        return {nome: user.nome};
     }
 }

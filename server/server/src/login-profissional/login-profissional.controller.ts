@@ -8,6 +8,6 @@ export class LoginProfissionalController {
     constructor (private readonly loginProfissionalService: LoginProfissionalService) {}
     @Post()
     async create(@Body() data: loginProfissionalDto) {
-        return this.loginProfissionalService.create(data);
+        return this.loginProfissionalService.find(data);
     }
 }

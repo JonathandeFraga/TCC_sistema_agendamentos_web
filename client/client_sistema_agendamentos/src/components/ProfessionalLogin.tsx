@@ -40,13 +40,12 @@ export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
         try {
           const response = await api.post('/login-profissional', {
             fone: phone,
-            senha: password,
-            nome: 'Jonathan'
+            senha: password
           });
 
-          console.log(response.data);
+          const name = response.data.nome;
 
-          toast.success("Login realizado com sucesso.");
+          toast.success(`Bem vindo, ${name}.`);
           onLogin();
         } catch(error: any) {
           console.log(error);
