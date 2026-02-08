@@ -1,4 +1,4 @@
-export type loginProfissionalDto = {
+export type loginClienteDto = {
     fone: string;
     senha: string;
     nome: string;
