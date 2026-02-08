@@ -5,20 +5,22 @@ import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { toast } from "sonner";
+import { api } from "../lib/api";
 import axios from "axios";
+import { normalizeBrMobileToE164 } from "../utils/phone";
 
 interface ProfessionalLoginProps {
   onBack: () => void;
   onLogin: () => void;
 }
 
-const api = axios.create({ baseURL: 'http://localhost:3000' });
-
 export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    type LoginResponse = { accessToken: string; nome: string};
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,28 +30,35 @@ export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
           return;
         }
 
+        const foneE164 = normalizeBrMobileToE164(phone);
+        if (!foneE164) {
+          toast.error("Informe um celular válido (DDD + 9 dígitos).");
+          return;
+        }
+
         setIsLoading(true);
 
-        // Simulação de Login
-        /*setTimeout(() => {
-            setIsLoading(false);
-            toast.success("Login realizado com sucesso.");
-            onLogin();
-        }, 1000);*/
-
         try {
-          const response = await api.post('/login-profissional', {
+
+          const response = await api.post<LoginResponse>('/auth/login', {
             fone: phone,
-            senha: password
+            senha: password,
+            tipo: "profissional"
           });
+          const { accessToken, nome } = response.data;
 
-          const name = response.data.nome;
+          sessionStorage.setItem('access_token', accessToken);
 
-          toast.success(`Bem vindo, ${name}.`);
+          toast.success(`Bem vindo, ${nome}.`);
           onLogin();
-        } catch(error: any) {
-          console.log(error);
-          toast.error("Falha no login. Verifique telefone e senha.");
+
+        } catch(err) {
+          if (axios.isAxiosError(err)) {
+            const msg = (err.response?.data as any)?.message;
+            toast.error(msg ?? "Falha no login. Verifique telefone e senha.");
+          } else {
+            toast.error("Erro inesperado.");
+          }
         } finally {
           setIsLoading(false)
         }
@@ -98,6 +107,7 @@ export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
