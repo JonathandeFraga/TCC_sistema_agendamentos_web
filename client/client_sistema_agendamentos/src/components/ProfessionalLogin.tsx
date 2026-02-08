@@ -14,13 +14,13 @@ interface ProfessionalLoginProps {
   onLogin: () => void;
 }
 
+type LoginResponse = { accessToken: string; nome: string};
+
 export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    type LoginResponse = { accessToken: string; nome: string};
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,17 +39,14 @@ export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
         setIsLoading(true);
 
         try {
-
           const response = await api.post<LoginResponse>('/auth/login', {
-            fone: phone,
+            fone: foneE164,
             senha: password,
             tipo: "profissional"
           });
-          const { accessToken, nome } = response.data;
 
-          sessionStorage.setItem('access_token', accessToken);
-
-          toast.success(`Bem vindo, ${nome}.`);
+          sessionStorage.setItem('access_token', response.data.accessToken);
+          toast.success(`Bem vindo, ${response.data.nome}.`);
           onLogin();
 
         } catch(err) {

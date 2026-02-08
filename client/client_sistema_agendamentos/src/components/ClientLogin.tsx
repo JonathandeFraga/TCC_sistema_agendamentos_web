@@ -6,54 +6,108 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { toast } from "sonner";
+import { api } from "../lib/api";
+import axios from "axios";
+import { normalizeBrMobileToE164 } from "../utils/phone";
 
 interface ClientLoginProps {
   onBack: () => void;
   onLogin: () => void;
 }
 
+type LoginResponse = { accessToken: string; nome: string };
+
 export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
-  const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [loginPhone, setLoginPhone] = useState("");
+
   const [registerName, setRegisterName] = useState("");
-  const [registerEmail, setRegisterEmail] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!loginEmail || !loginPassword) {
+    if (!loginPhone || !loginPassword) {
       toast.error("Favor preencher todos os campos.");
       return;
     }
 
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("Login realizado com sucesso.");
-      onLogin();
-    }, 1000);
-  };
-
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!registerName || !registerEmail || !registerPhone || !registerPassword) {
-      toast.error("Favor preencher todos os campos");
+    const foneE164 = normalizeBrMobileToE164(loginPhone);
+    if (!foneE164) {
+      toast.error("Informe um celular BR válido (DDD + 9 dígitos).");
       return;
     }
 
     setIsLoading(true);
-    
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("Cadastro realizado com sucesso!");
+    try {
+      const response = await api.post<LoginResponse>('/auth/login', {
+        tipo: "cliente",
+        fone: foneE164,
+        senha: loginPassword,
+      });
+
+      sessionStorage.setItem("access_token", response.data.accessToken);
+      toast.success(`Bem vinda, ${response.data.nome}.`);
       onLogin();
-    }, 1000);
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const msg = (err.response?.data as any)?.message;
+        toast.error(msg ?? "Falha no login. Verifique telefone e senha.");
+      } else {
+        toast.error("Erro inesperado.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!registerName || !registerPhone || !registerPassword) {
+      toast.error("Favor preencher todos os campos");
+      return;
+    }
+
+    const foneE164 = normalizeBrMobileToE164(registerPhone);
+    if (!foneE164) {
+      toast.error("Informe um celular BR válido (DDD + 9 dígitos).");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await api.post("/auth/register", {
+        tipo: "cliente",
+        nome: registerName,
+        fone: foneE164,
+        senha: registerPassword,
+      });
+
+      toast.success("Cadastro realizado com sucesso!");
+      const loginRes = await api.post<LoginResponse>('/auth/login',{
+        tipo: "cliente",
+        fone: foneE164,
+        senha: registerPassword,
+      });
+
+      sessionStorage.setItem("access_token", loginRes.data.accessToken);
+      toast.success(`Bem vinda, ${loginRes.data.nome}.`);
+      onLogin();
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const msg = (err.response?.data as any)?.message;
+        toast.error(msg ?? "Falha no cadastro. Verfique os dados.");
+      } else {
+        toast.error("Erro inesperado.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -88,13 +142,14 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">E-mail</Label>
+                  <Label htmlFor="login-phone">Telefone</Label>
                   <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
+                    id="login-phone"
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder="(51) 99999-9999"
+                    value={loginPhone}
+                    onChange={(e) => setLoginPhone(e.target.value)}
                     disabled={isLoading}
                   />
                 </div>
@@ -105,6 +160,7 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
                     <Input
                       id="login-password"
                       type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
                       placeholder="••••••••"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
@@ -112,7 +168,10 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                      aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      aria-pressed={showPassword}
+                      onClick={() => setShowPassword((v) => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     >
                       {showPassword ? (
@@ -155,23 +214,12 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-email">E-mail</Label>
-                  <Input
-                    id="register-email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={registerEmail}
-                    onChange={(e) => setRegisterEmail(e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="register-phone">Telefone</Label>
                   <Input
                     id="register-phone"
                     type="tel"
-                    placeholder="(00) 00000-0000"
+                    autoComplete="tel"
+                    placeholder="(51) 99999-9999"
                     value={registerPhone}
                     onChange={(e) => setRegisterPhone(e.target.value)}
                     disabled={isLoading}
@@ -191,7 +239,10 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                      aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      aria-pressed={showPassword}
+                      onClick={() => setShowPassword((v) => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     >
                       {showPassword ? (
