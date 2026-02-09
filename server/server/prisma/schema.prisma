@@ -14,22 +14,69 @@ datasource db {
 }
 
 model loginProfissional {
-  id        Int @id @default(autoincrement())
-  fone      String @unique
-  senha     String
-  nome      String
+  id           Int            @id @default(autoincrement())
+  fone         String         @unique
+  senha        String
+  nome         String
+
+  agendamentos agendamentos[]
 }
 
 model loginCliente {
-  id        Int @id @default(autoincrement())
-  fone      String @unique
-  senha     String
-  nome      String
+  id           Int            @id @default(autoincrement())
+  fone         String         @unique
+  senha        String
+  nome         String
+
+  agendamentos agendamentos[]
 }
 
 model servicos {
-  id        Int @id @default(autoincrement())
-  nome      String
-  custo     String
-  descricao String
+  id         Int    @id @default(autoincrement())
+  nome       String
+  custoCent  Int
+  duracaoMin Int
+  descricao  String
+
+  agendamentos agendamentos[]
+}
+
+enum BookingStatus {
+  AGENDADO
+  CONCLUIDO
+  CANCELADO
+}
+
+model agendamentos {
+  id             Int @id @default(autoincrement())
+  clienteId      Int
+  profissionalId Int
+  servicoId      Int
+
+  inicio DateTime
+  fim    DateTime
+
+  status BookingStatus @default(AGENDADO)
+
+  custoCentSnap  Int
+  duracaoMinSnap Int
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  caceledAt   DateTime?
+  concludedAt DateTime?
+
+  cliente      loginCliente       @relation(fields: [clienteId], references: [id])
+  profissional loginProfissional? @relation(fields: [profissionalId], references: [id])
+  servico      servicos           @relation(fields: [servicoId], references: [id])
+
+  @@index([clienteId, inicio])
+  @@index([status, inicio])
+  @@index([servicoId, inicio])
+}
+
+model feriados {
+  id   Int      @id @default(autoincrement())
+  data DateTime @unique @db.Date
+  nome String?
 }
