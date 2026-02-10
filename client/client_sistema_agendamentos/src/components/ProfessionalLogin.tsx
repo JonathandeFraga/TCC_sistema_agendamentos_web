@@ -45,7 +45,6 @@ export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
             tipo: "profissional"
           });
 
-          sessionStorage.setItem('access_token', response.data.accessToken);
           toast.success(`Bem vindo, ${response.data.nome}.`);
           onLogin();
 

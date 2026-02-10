@@ -1,45 +1,167 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ArrowLeft, Calendar, Clock, Sparkles, CheckCircle2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Label } from "./ui/label";
 import { toast } from "sonner";
+import { api } from "../lib/api";
+import { formatBRLFromCent, isoToBRDate } from "../utils/format";
 
 interface ClientBookingProps {
     onBack: () => void;
 }
 
-const services = [
-    { id: 1, name: 'Manicure Clássica', duration: '45 min', price: 'R$ 40', description: 'Cuidado completo com as unhas das mãos' },
-    { id: 2, name: 'Pedicure Clássica', duration: '60 min', price: 'R$ 50', description: 'Cuidado completo com os pés' },
-    { id: 3, name: 'Esmaltação em Gel', duration: '90 min', price: 'R$ 80', description: 'Esmaltação duradoura com acabamento profissional' },
-    { id: 4, name: 'Spa dos Pés', duration: '75 min', price: 'R$ 70', description: 'Tratamento relaxante com hidratação profunda' },
-    { id: 5, name: 'Manicure + Pedicure', duration: '120 min', price: 'R$ 85', description: 'Pacote completo de cuidados' },
-];
+type Service = {
+    id: number;
+    nome: string;
+    custoCent: number;
+    duracaoMin: string;
+    descricao: string;
+};
 
-const availableDates = [
-    '26/12/2025',
-    '27/12/2025',
-    '28/12/2025',
-    '29/12/2025',
-    '30/12/2025',   
-];
+type AvailableDay = { date: string; available: boolean };
 
-const availableTimes = [
-    '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00'
-];
+type MyBooking = {
+    id: number;
+    status: "AGENDADO" | "CONCLUIDO" | "CANCELADO";
+    inicio: string;
+    fim: string;
+    servico: { id: number; nome: string; duracaoMin: number; custoCent: number };
+};
 
-const myBooking = [
-    { id: 1, service: 'Manicure Clássica', date: '27/12/2025', time: '14:00' },
-    { id: 2, service: 'Pedicure Clássica', date: '29/12/2025', time: '10:00' },
-];
+function yyyyMmNow(): string {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}`;
+}
+
+function hhmmFromISOString(iso: string) {
+    const d = new Date(iso);
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+}
 
 export function ClientBooking({ onBack }: ClientBookingProps) {
-    const [selectedService, setSelectedService] = useState<number | null>(null);
-    const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [view, setView] = useState<'services' | 'schedule' | 'mybookings'>('services');
 
+    const [services, setServices] = useState<Service[]>([]);
+    const [loadingServices, setLoadingServices] = useState(false);
+
+    const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
+
+    const [month, setMonth] = useState<string>(yyyyMmNow());
+    const [availableDays, setAvailableDays] = useState<AvailableDay[]>([]);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+    const [selectedTime, setSelectedTime] = useState<string | null>(null);
+
+    const [myBookings, setMyBookings] = useState<MyBooking[]>([]);
+    const [loadingMyBookings, setLoadingMyBookings] = useState(false);
+
+    const selectedService = useMemo(
+        () => services.find((s) => s.id === selectedServiceId) ?? null,
+        [services, selectedServiceId]
+    );
+
+    useEffect(() => {
+        (async () => {
+            try {
+                setLoadingServices(true);
+                const res = await api.get<Service[]>("/servicos");
+                setServices(res.data);
+            } catch (e) {
+                toast.error("Falha ao carregar serviços.");
+            } finally {
+                setLoadingServices(false);
+            }
+        })();
+    }, []);
+
+    const loadMyBookings = async () => {
+        try {
+            setLoadingMyBookings(true);
+            const res = await api.get<MyBooking[]>("/agendamentos/me");
+            setMyBookings(res.data);
+        } catch (e) {
+            toast.error("falha ao carregar seus agendamentos.");
+        } finally {
+            setLoadingMyBookings(false);
+        }
+    };
+
+    useEffect(() =>{
+        if (!selectedServiceId) return;
+
+        (async () => {
+            try {
+                setAvailableDays([]);
+                setSelectedDate(null);
+                setAvailableTimes([]);
+                setSelectedTime(null);
+
+                const res = await api.get<AvailableDay[]>("/agendamentos/disponibilidade/dias", {
+                    params: { servicoId: selectedServiceId, mes: month },
+                });
+                setAvailableDays(res.data);
+            } catch (e) {
+                toast.error("Falha ao carregar dias disponíveis.");
+            }
+        })();
+    }, [selectedServiceId, month]);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                setAvailableTimes([]);
+                setSelectedTime(null);
+
+                const rest = await api.get<string[]>("/agendamentos/disponibilidade/horarios", {
+                    params: { servicoid: selectedServiceId, data: selectedDate },
+                });
+
+                setAvailableTimes(rest.data);
+            } catch (e) {
+                toast.error("Falha ao carregar horários disponíveis.");
+            }
+        })()
+    }, [selectedServiceId, selectedDate]);
+
+    const handleConfirmBooking = async () => {
+        if (!selectedServiceId || !selectedDate || !selectedTime) return;
+
+        try {
+            await api.post("/agendamentos", {
+                servicoId: selectedServiceId,
+                data: selectedDate,
+                hora: selectedTime,
+            });
+
+            toast.success("Agendamento confirmado", {
+                description: `${selectedService?.nome ?? "Serviço"} em ${isoToBRDate(selectedDate)} às ${selectedTime}`,
+            });
+
+            setSelectedServiceId(null);
+            setSelectedDate(null);
+            setSelectedTime(null);
+            setAvailableDays([]);
+            setAvailableTimes([]);
+            setView("services");
+        } catch (e: any) {
+            const msg = e?.response?.data?.message;
+            toast.error(typeof msg === "string" ? msg: "Falha ao criar agendamento.");
+        }
+    };
+
+    const handleCancel = async (id: number) => {
+
+    };
+
+
+
+
+    
     const handleBooking = () => {
         if (selectedService && selectedDate && selectedTime) {
             const service = services.find(s => s.id === selectedService);
