@@ -48,27 +48,27 @@ enum BookingStatus {
 }
 
 model agendamentos {
-  id             Int @id @default(autoincrement())
-  clienteId      Int
-  profissionalId Int
-  servicoId      Int
+  id              Int @id @default(autoincrement())
+  clienteId       Int
+  profissionalId  Int?
+  servicoId       Int
 
-  inicio DateTime
-  fim    DateTime
+  inicio          DateTime
+  fim             DateTime
 
   status BookingStatus @default(AGENDADO)
 
-  custoCentSnap  Int
-  duracaoMinSnap Int
+  custoCentSnap   Int
+  duracaoMinSnap  Int
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  caceledAt   DateTime?
-  concludedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  canceledAt      DateTime?
+  concludedAt     DateTime?
 
-  cliente      loginCliente       @relation(fields: [clienteId], references: [id])
-  profissional loginProfissional? @relation(fields: [profissionalId], references: [id])
-  servico      servicos           @relation(fields: [servicoId], references: [id])
+  cliente         loginCliente       @relation(fields: [clienteId], references: [id])
+  profissional    loginProfissional? @relation(fields: [profissionalId], references: [id])
+  servico         servicos           @relation(fields: [servicoId], references: [id])
 
   @@index([clienteId, inicio])
   @@index([status, inicio])
@@ -76,7 +76,7 @@ model agendamentos {
 }
 
 model feriados {
-  id   Int      @id @default(autoincrement())
-  data DateTime @unique @db.Date
-  nome String?
+  id              Int      @id @default(autoincrement())
+  data            DateTime @unique @db.Date
+  nome            String?
 }
