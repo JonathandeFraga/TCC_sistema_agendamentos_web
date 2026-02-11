@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, ConflictException, ForbiddenException,
 import { PrismaService } from 'src/database/prisma.service';
 import { DateTime } from 'luxon';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { exists } from 'fs';
 
 const TZ = 'America/Sao_Paulo';
 
@@ -35,11 +36,13 @@ export class AgendamentosService {
 
     private async isHoliday(localDate: DateTime): Promise<boolean> {
         const dateOnly = localDate.toISODate();
-        const found = await this.prisma.feriados.findUnique({
-            where: { data: new Date(`${dateOnly}T00:00:00.000Z`) },
-            select: { id: true },
-        });
-        return !!found;
+
+        const rows = await this.prisma.$queryRaw<Array<{ exists: boolean }>>`
+            SELECT EXISTS (
+                SELECT 1 FROM "feriados" f WHERE f."data" = ${dateOnly}::date
+            ) as "exists"
+        `;
+        return rows[0]?.exists ?? false;
     }
 
     async listServicos() {

@@ -16,14 +16,20 @@ export class AgendamentosController {
         return this.svc.listServicos();
     }
 
-    @Get('agendamentos/disponibilidade/dias')
-    dias(@Query() q: QueryMesDto) {
-        return this.svc.disponibilidadeDias(Number(q.servicoId), q.mes);
+    @Get('disponibilidade/dias')
+    dias(
+        @Query('servicoId', ParseIntPipe) servicoId: number,
+        @Query('mes') mes: string,
+    ) {
+        return this.svc.disponibilidadeDias(servicoId, mes);
     }
 
-    @Get('agendamentos/disponibilidade/horarios')
-    horarios(@Query() q: QueryDiaDto) {
-        return this.svc.disponibilidadeHorarios(Number(q.servicoId), q.data);
+    @Get('disponibilidade/horarios')
+    horarios(
+        @Query('servicoId', ParseIntPipe) servicoId: number,
+        @Query('data') data: string,
+    ) {
+        return this.svc.disponibilidadeHorarios(servicoId, data);
     }
 
     @UseGuards(AuthGuard('jwt'), ClienteGuard)

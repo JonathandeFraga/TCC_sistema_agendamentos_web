@@ -73,7 +73,7 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
         (async () => {
             try {
                 setLoadingServices(true);
-                const res = await api.get<Service[]>("/servicos");
+                const res = await api.get<Service[]>("agendamentos/servicos");
                 setServices(res.data);
             } catch (e) {
                 toast.error("Falha ao carregar serviços.");
@@ -89,7 +89,7 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
             const res = await api.get<MyBooking[]>("/agendamentos/me");
             setMyBookings(res.data);
         } catch (e) {
-            toast.error("falha ao carregar seus agendamentos.");
+            toast.error("Falha ao carregar seus agendamentos.");
         } finally {
             setLoadingMyBookings(false);
         }
@@ -122,7 +122,7 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
                 setSelectedTime(null);
 
                 const rest = await api.get<string[]>("/agendamentos/disponibilidade/horarios", {
-                    params: { servicoid: selectedServiceId, data: selectedDate },
+                    params: { servicoId: selectedServiceId, data: selectedDate },
                 });
 
                 setAvailableTimes(rest.data);
@@ -136,7 +136,7 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
         if (!selectedServiceId || !selectedDate || !selectedTime) return;
 
         try {
-            await api.post("/agendamentos", {
+            await api.post("agendamentos/agendamentos", {
                 servicoId: selectedServiceId,
                 data: selectedDate,
                 hora: selectedTime,
