@@ -36,6 +36,10 @@ function yyyyMmNow(): string {
     return `${y}-${m}`;
 }
 
+function isoDateFromISOString(iso: string) {
+    return iso.slice(0, 10);
+}
+
 function hhmmFromISOString(iso: string) {
     const d = new Date(iso);
     const hh = String(d.getHours()).padStart(2, "0");
@@ -155,24 +159,14 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
     };
 
     const handleCancel = async (id: number) => {
-
-    };
-
-
-
-
-    
-    const handleBooking = () => {
-        if (selectedService && selectedDate && selectedTime) {
-            const service = services.find(s => s.id === selectedService);
-            toast.success('Agendamento confirmado.', {
-                description: `${service?.name} em ${selectedDate} às ${selectedTime}.`,
-            });
-            setSelectedService(null);
-            setSelectedDate(null);
-            setSelectedTime(null);
-            setView('services');
-        };
+        try {
+            await api.post(`/agendamentos/${id}/cancelar`);
+            toast.success("Agendamento cancelado.");
+            await loadMyBookings();
+        } catch (e: any) {
+            const msg = e?.response?.data?.message;
+            toast.error(typeof msg === "string" ? msg : "Não foi possível cancelar.");
+        }
     };
 
     return (
@@ -185,21 +179,26 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
                         </Button>
                         <div>
                             <h1 className="text-gray-900">Agendamento</h1>
-                            <p className="text-gray-600">Escolha seu serviço</p>
+                            <p className="text-gray-600">
+                                {view === "services" ? "Escolha seu serviço" : view === "schedule" ? "Selecione data e horário" : "Seus agendamentos"}
+                            </p>
                         </div>
                     </div>
 
                     <div className="flex gap-2">
                         <Button
-                            variant={view === 'services' ? 'default' : 'outline'}
-                            onClick={() => setView('services')}
+                            variant={view === "services" ? "default" : "outline"}
+                            onClick={() => setView("services")}
                             className="flex-1"
                         >
                             Serviços
                         </Button>
                         <Button
-                            variant={view === 'mybookings' ? 'default' : 'outline'}
-                            onClick={() => setView('mybookings')}
+                            variant={view === "mybookings" ? "default" : "outline"}
+                            onClick={() => {
+                                setView("mybookings");
+                                loadMyBookings();
+                            }}
                             className="flex-1"
                         >
                             Meus Agendamentos
@@ -209,74 +208,104 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
             </header>
 
             <main className="max-w-3x1 mx-auto p-4 pb-24">
-                {view === 'services' && (
+                {view === "services" && (
                     <div className="space-y-4">
                         <h2 className="text-gray-900">Escolha o Serviço</h2>
+                        
+                        {loadingServices && <p className="text-gray-600">Carregando serviços...</p>}
+                        {!loadingServices && services.length === 0 && <p className="text-gray-600">Nenhum serviço cadastrado.</p>}
+
                         {services.map((service) => (
                             <Card
                                 key={service.id}
-                                className={`p-4 cursor-pointer transition-all ${
-                                    selectedService === service.id
-                                        ? 'border-2 border-pink-500 bg-pink-50'
-                                        : 'hover:shadow-md'
-                                }`}
+                                className="p-4 cursor-pointer transition-all hover:shadow-md"
                                 onClick={() => {
-                                    setSelectedService(service.id);
-                                    setView('schedule');
+                                    setSelectedServiceId(service.id);
+                                    setView("schedule");
                                 }}
                             >
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
-                                        <h3 className="text-gray-900">{service.name}</h3>
-                                        <p className="text-gray-600 mb-2">{service.description}</p>
+                                        <h3 className="text-gray-900">{service.nome}</h3>
+                                        <p className="text-gray-600 mb-2">{service.descricao}</p>
+
                                         <div className="flex items-center gap-4 text-gray-600">
                                             <div className="flex items-center gap-1">
                                                 <Clock className="w-4 h-4" />
-                                                <span>{service.duration}</span>
+                                                <span>{service.duracaoMin}</span>
                                             </div>
-                                            <span className="text-pink-600">{service.price}</span>
+                                            <span className="text-pink-600">{formatBRLFromCent(service.custoCent)}</span>
                                         </div>
                                     </div>
-                                    {selectedService === service.id && (
-                                        <CheckCircle2 className="w-6 h-6 text-pink-600" />
-                                    )}
+                                    {selectedServiceId === service.id && <CheckCircle2 className="w-6 h-6 text-pink-600" />}
                                 </div>
                             </Card>
                         ))}
                     </div>
                 )}
 
-                {view === 'schedule' && selectedService && (
+                {view === "schedule" && selectedService && (
                     <div className="space-y-6">
                         <div>
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-gray-900">Agendar</h2>
-                                <Button variant="ghost" size="sm" onClick={() => setView('services')}>
+                                <Button 
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSelectedServiceId(null);
+                                        setSelectedDate(null);
+                                        setSelectedTime(null);
+                                        setAvailableDays([]);
+                                        setAvailableTimes([]);
+                                        setView("services");
+                                    }}
+                                >
                                     Trocar Serviço
                                 </Button>
                             </div>
+
                             <Card className="p-4 bg-pink-50 border-pink-200">
-                                <p className="text-gray-900">{services.find(s => s.id === selectedService)?.name}</p>
-                                <p className="text-gray-600">{services.find(s => s.id === selectedService)?.duration} • {services.find(s => s.id === selectedService)?.price}</p> 
+                                <p className="text-gray-900">{selectedService.nome}</p>
+                                <p className="text-gray-600">
+                                    {selectedService.duracaoMin} min • {formatBRLFromCent(selectedService.custoCent)}
+                                </p> 
                             </Card>
                         </div>
 
                         <div>
-                            <Label className="block mb-3">Escolha a Data</Label>
+                            <Label className="block mb-3">Escolha o Mês</Label>
+                            <input 
+                                type="month"
+                                value={month}
+                                onChange={(e) => setMonth(e.target.value)}
+                                className="w-full border rounded-md px-3 py-2 bg-white"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block mb-3">Escolha a Data</label>
                             <div className="grid grid-cols-3 gap-2">
-                                {availableDates.map((date) => (
-                                    <Button
-                                        key={date}
-                                        variant={selectedDate === date ? 'default' : 'outline'}
-                                        onClick={() => setSelectedDate(date)}
-                                        className="h-auto py-3"
-                                    >
-                                        <div className="text-center">
-                                            <div>{date.split('/')[0]}</div>
-                                            <div className="text-xs">{date.split('/')[1]}/{date.split('/')[2].slice(-2)}</div>
-                                        </div>
-                                    </Button>
-                                ))}
+                                {availableDays
+                                    .filter((d) => d.available)
+                                    .map((d) => (
+                                        <Button
+                                            key={d.date}
+                                            variant={selectedDate === d.date ? "default" : "outline"}
+                                            onClick={() => setSelectedDate(d.date)}
+                                            className="h-auto py-3"
+                                        >
+                                            <div className="text-center">
+                                                <div>{d.date.split("-")[2]}</div>
+                                                <div className="text-xs">{d.date.split("-")[1]}/{d.date.split("-")[0].slice(-2)}</div>
+                                            </div>
+                                        </Button>
+                                    ))
+                                }
+
+                                {selectedServiceId && availableDays.length > 0 && availableDays.filter((d) => d.available).length === 0 && (
+                                    <p className="text-gray-600 col-span-3">Nenhum dia disponível neste mês.</p>
+                                )}
                             </div>
                         </div>
 
@@ -287,13 +316,17 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
                                     {availableTimes.map((time) => (
                                         <Button
                                             key={time}
-                                            variant={selectedTime === time ? 'default' : 'outline'}
+                                            variant={selectedTime === time ? "default" : "outline"}
                                             onClick={() => setSelectedTime(time)}
                                         >
                                             {time}
                                         </Button>
                                     ))}
                                 </div>
+
+                                {availableTimes.length === 0 && (
+                                    <p className="text-gray-600 mt-2">Nenhum horário disponível para este dia.</p>
+                                )}
                             </div>
                         )}
                     </div>
@@ -302,41 +335,64 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
                 {view === 'mybookings' && (
                     <div className="space-y-4">
                         <h2 className="text-gray-900">Meus Agendamentos</h2>
-                        {myBooking.map((booking) => (
-                            <Card key={booking.id} className="p-4">
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center">
-                                            <Sparkles className="w-6 h-6 text-white" /> 
-                                        </div>
-                                        <div>
-                                            <h3 className="text-gray-900">{booking.service}</h3>
-                                            <div className="flex items-center gap-3 mt-1 text-gray-600">
-                                                <div className="flex items-center gap-1">
-                                                    <Calendar className="2-4 h-4" />
-                                                    <span>{booking.date}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="w-4 h-3" />
-                                                    <span>{booking.time}</span>
+
+                        {loadingMyBookings && <p className="text-gray-600">Carregando...</p>}
+                        {!loadingMyBookings && myBookings.length === 0 && <p className="text-gray-600">Você não tem agendamentos.</p>}
+
+                        {myBookings.map((b) => {
+                            const date = isoDateFromISOString(b.inicio);
+                            const time = hhmmFromISOString(b.inicio);
+
+                            return (
+                                <Card key={b.id} className="p-4">
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-start gap-4">
+                                            <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center">
+                                                <Sparkles className="w-6 h-6 text-white" /> 
+                                            </div>
+
+                                            <div>
+                                                <h3 className="text-gray-900">{b.servico.nome}</h3>
+                                                <div className="flex items-center gap-3 mt-1 text-gray-600">
+                                                    <div className="flex items-center gap-1">
+                                                        <Calendar className="w-4 h-4" />
+                                                        <span>{isoToBRDate(date)}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <Clock className="w-4 h-3" />
+                                                        <span>{time}</span>
+                                                    </div>
+                                                    <span className="text-xs px-2 py-0.5 rounded border">
+                                                        {b.status}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-red-600"
+                                            disabled={b.status !== "AGENDADO"}
+                                            onClick={() => handleCancel(b.id)}
+                                        >
+                                            Cancelar
+                                        </Button>
                                     </div>
-                                    <Button variant="ghost" size="sm" className="text-red-600">
-                                        Cancelar
-                                    </Button>
-                                </div>
-                            </Card>
-                        ))}
+                                </Card>
+                            );
+                        })}
                     </div>
                 )}
             </main>
 
-            {view === 'schedule' && selectedService && selectedDate && selectedTime && (
+            {view === "schedule" && selectedService && selectedDate && selectedTime && (
                 <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4">
                     <div className="max-w-3x1 mx-auto">
-                        <Button onClick={handleBooking} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700">
+                        <Button
+                            onClick={handleConfirmBooking}
+                            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                        >
                             Confirmar Agendamento
                         </Button>
                     </div>
