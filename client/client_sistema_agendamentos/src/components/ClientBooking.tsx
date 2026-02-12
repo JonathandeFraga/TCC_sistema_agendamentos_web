@@ -15,7 +15,7 @@ type Service = {
     id: number;
     nome: string;
     custoCent: number;
-    duracaoMin: string;
+    duracaoMin: number;
     descricao: string;
 };
 
