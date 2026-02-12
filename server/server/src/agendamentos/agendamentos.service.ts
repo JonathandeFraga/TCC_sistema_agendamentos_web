@@ -28,9 +28,10 @@ export class AgendamentosService {
 
     private isWithinWindows(start: DateTime, end: DateTime): boolean {
         return WINDOWS.some((w) => {
+            const day = start.startOf('day');
             const ws = start.set({ hour: w.start.h, minute: w.start.m, second: 0, millisecond: 0 });
             const we = start.set({ hour: w.end.h, minute: w.end.m, second: 0, millisecond: 0 });
-            return start >= we && end <= we;
+            return start >= ws && end <= we;
         });
     }
 

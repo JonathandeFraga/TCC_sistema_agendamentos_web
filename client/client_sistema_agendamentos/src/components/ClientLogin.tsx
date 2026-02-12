@@ -50,6 +50,7 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
         senha: loginPassword,
       });
 
+      sessionStorage.setItem("access_token", response.data.accessToken);
       toast.success(`Bem vinda, ${response.data.nome}.`);
       onLogin();
       
@@ -95,6 +96,7 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
         senha: registerPassword,
       });
 
+      sessionStorage.setItem("access_token", loginRes.data.accessToken);
       toast.success(`Bem vinda, ${loginRes.data.nome}.`);
       onLogin();
 

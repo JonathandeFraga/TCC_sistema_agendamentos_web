@@ -33,25 +33,25 @@ export class AgendamentosController {
     }
 
     @UseGuards(AuthGuard('jwt'), ClienteGuard)
-    @Post('agendamentos')
+    @Post('')
     criar(@Req() req: any, @Body() dto: CreateBookingDto) {
         return this.svc.criarAgendamento(req.user.userId, dto);
     }
 
     @UseGuards(AuthGuard('jwt'), ClienteGuard)
-    @Get('agendamentos/me')
+    @Get('me')
     meus(@Req() req: any) {
         return this.svc.meusAgendamentos(req.user.userId);
     }
 
     @UseGuards(AuthGuard('jwt'), ClienteGuard)
-    @Post('agendamentos/:id/cancelar')
+    @Post(':id/cancelar')
     cancelar(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
         return this.svc.cancelar(req.user.userId, id);
     }
 
     @UseGuards(AuthGuard('jwt'), ProfissionalGuard)
-    @Post('agendamentos/:id/concluir')
+    @Post(':id/concluir')
     concluir(@Param('id', ParseIntPipe) id: number) {
         return this.svc.concluir(id);
     }

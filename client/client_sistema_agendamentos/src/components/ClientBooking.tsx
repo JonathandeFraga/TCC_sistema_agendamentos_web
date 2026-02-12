@@ -116,6 +116,8 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
     }, [selectedServiceId, month]);
 
     useEffect(() => {
+        if (!selectedServiceId || !selectedDate) return;
+
         (async () => {
             try {
                 setAvailableTimes([]);
@@ -136,7 +138,7 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
         if (!selectedServiceId || !selectedDate || !selectedTime) return;
 
         try {
-            await api.post("agendamentos/agendamentos", {
+            await api.post("/agendamentos", {
                 servicoId: selectedServiceId,
                 data: selectedDate,
                 hora: selectedTime,
