@@ -1,44 +1,80 @@
-import { ArrowLeft, Calendar, DollarSign, TrendingUp, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Calendar, DollarSign, TrendingUp, Users, Check, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { toast } from "sonner";
+import { api } from "../lib/api";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
 
 interface ProfessionalDashboardProps {
     onBack: () => void;
 }
 
-const appointmentsData = [
-    { day: 'Seg', agendamentos: 12 },
-    { day: 'Ter', agendamentos: 15 },
-    { day: 'Qua', agendamentos: 18 },
-    { day: 'Qui', agendamentos: 14 },
-    { day: 'Sex', agendamentos: 22 },
-    { day: 'Sáb', agendamentos: 28 },
-    { day: 'Dom', agendamentos: 8 },
-];
+type Kpis = {
+  todayAppointments: number;
+  weekUniqueClients: number;
+  monthRevenueCent: number;
+};
 
-const servicesData = [
-    { name: 'Manicure', value: 45, color: '#ec4899' },
-    { name: 'Pedicure', value: 35, color: '#a855f7' },
-    { name: 'Esmaltação em Gel', value: 28, color: '#f97316' },
-    { name: 'Spa dos Pés', value: 22, color: '#8b5cf6' },
-];
+type AppointmentDay = {
+  day: string;
+  agendamentos: number;
+};
 
-const revenueData = [
-  { month: 'Jan', receita: 4200 },
-  { month: 'Fev', receita: 5100 },
-  { month: 'Mar', receita: 4800 },
-  { month: 'Abr', receita: 6200 },
-  { month: 'Mai', receita: 5900 },
-  { month: 'Jun', receita: 7200 },
-];
+type PopularService = {
+  name: string;
+  value: number;
+  percent: number;
+};
 
-const upcomingAppointments = [
-  { id: 1, client: 'Maria Silva', service: 'Manicure', time: '14:00', date: '26/12/2025' },
-  { id: 2, client: 'Ana Costa', service: 'Pedicure', time: '15:30', date: '26/12/2025' },
-  { id: 3, client: 'Julia Santos', service: 'Esmaltação em Gel', time: '16:00', date: '26/12/2025' },
-  { id: 4, client: 'Beatriz Oliveira', service: 'Spa dos Pés', time: '10:00', date: '27/12/2025' },
-];
+type RevenuePoint = {
+  month: string;
+  receita: number;
+};
+
+type BookItem = {
+  id: number;
+  status: "AGENDADO" | "CONCLUIDO" | "CANCELADO";
+  inicio: string;
+  fim: string;
+  cliente: { id: number; nome: string; fone: string };
+  servico: { id: number; nome: string; duracaoMin: number; custoCent: number };
+};
+
+function brlFromCent(cents: number) {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function hhmm(iso: string) {
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function brDate(iso: string) {
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = d.getFullYear();
+  return `${dd}/${mm}/${yy}`;
+}
+
+//////////////////////////////////////
 
 export function ProfessionalDashboard({ onBack }: ProfessionalDashboardProps) {
   return (

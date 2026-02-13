@@ -11,7 +11,7 @@ import { DashboardProfissionalModule } from './dashboard-profissional/dashboard-
 
 @Module({
   imports: [LoginProfissionalModule, AuthModule, LoginClienteModule, AgendamentosModule, DashboardProfissionalModule],
-  controllers: [AppController, DashboardProfissionalController],
-  providers: [AppService, DashboardProfissionalService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
