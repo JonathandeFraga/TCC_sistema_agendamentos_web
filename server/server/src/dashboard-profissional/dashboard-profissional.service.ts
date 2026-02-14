@@ -86,18 +86,21 @@ export class DashboardProfissionalService {
         const endLocal = DateTime.now().setZone(TZ).endOf('day');
         const startLocal = endLocal.minus({ days: 6 }).startOf('day');
 
-        const rows = await this.prisma.$queryRaw<
-            Array<{ day: string; count: number }>
-        >`
+        const rows = await this.prisma.$queryRaw<Array<{ day: string; count: number; d: string }>>`
             SELECT
-                to_char((a."inicio" AT TIME ZONE 'UTC' AT TIME ZONE ${TZ})::date, 'DY') AS "day",
-                count(*):: int AS "count"
-            FROM "agendamentos" a
-            WHERE a."inicio" >= ${startLocal.toUTC().toJSDate()}
-                AND a."inicio" <= ${endLocal.toUTC().toJSDate()}
-                AND a."status" = 'AGENDADO'
-            GROUP BY (a."inicio" AT TIME ZONE 'UTC' AT TIME ZONE ${TZ})::date
-            ORDER BY (A."inicio" AT TIME ZONE 'UTC' AT TIME ZONE ${TZ})::date ASC
+                to_char(d, 'DY') AS "day",
+                count(*)::int AS "count",
+                to_char(d, 'YYYY-MM-DD') AS "d"
+            FROM (
+                SELECT
+                    (((a."inicio" AT TIME ZONE 'UTC') AT TIME ZONE ${TZ})::date) AS d
+                FROM "agendamentos" a
+                WHERE a."inicio" >= ${startLocal.toUTC().toJSDate()}
+                    AND a."inicio" <= ${endLocal.toUTC().toJSDate()}
+                    AND a."status" = 'AGENDADO'
+            ) x
+            GROUP BY d
+            ORDER BY d ASC
         `;
 
         return rows.map((r) => ({ day: r.day.trim(), agendamentos: r.count }));
