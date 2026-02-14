@@ -38,13 +38,15 @@ export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
 
         setIsLoading(true);
 
+        console.log(`Fone: ${foneE164}, Senha: ${password}`);
+
         try {
           const response = await api.post<LoginResponse>('/auth/login', {
+            tipo: "profissional",
             fone: foneE164,
             senha: password,
-            tipo: "profissional"
           });
-
+        
           sessionStorage.setItem("access_token", response.data.accessToken);
           toast.success(`Bem vindo, ${response.data.nome}.`);
           onLogin();

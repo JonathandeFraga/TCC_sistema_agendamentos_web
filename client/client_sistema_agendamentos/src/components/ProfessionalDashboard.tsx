@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Calendar, DollarSign, TrendingUp, Users, Check, X, Car } from "lucide-react";
+import { ArrowLeft, Calendar, DollarSign, Users, Check, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { toast } from "sonner";
@@ -275,14 +275,83 @@ export function ProfessionalDashboard({ onBack }: ProfessionalDashboardProps) {
                     <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                   ))}
                 </Pie>
+                < Tooltip />
               </PieChart>
             </ResponsiveContainer>
           </Card>
         </div>
 
-////////////////////////////////////////////////////
-        {/* Agenda */}
+        <Card className="p-6">
+          <h2 className="text-gray-900 bm-4">Receita Mensal</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={revenue}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="receita" stroke="#a855f7" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
 
+        {/* AGENDA */}
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-gray-900">Agenda</h2>
+            <span className="text-sm text-gray-600">
+              {loading ? "..." : `${agenda.length} itens`}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {!loading && agenda.length === 0 && (
+              <p className="text-gray-600">Nenhum agendamento no período.</p>
+            )}
+
+            {agenda.map((a) => (
+              <div key={a.id} className="felx felx-col lg:flex-row lg:items-center lg:justify-between gap-3 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white">
+                    {a.cliente.nome?.charAt(0) ?? "C"}
+                  </div>
+
+                  <div>
+                    <p className="text-gray-900">
+                      {a.cliente.nome} <span className="text-gray-500 text-sm">({a.cliente.fone})</span>
+                    </p>
+                    <p className="text-gray-600">{a.servico.nome}</p>
+                    <p className="text-gray-600 text-sm">
+                      {brDate(a.inicio)} • {hhmm(a.inicio)}-{hhmm(a.fim)} • {a.status}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    disabled={a.status !== "AGENDADO"}
+                    onClick={() => handleConcluir(a.id)}
+                  >
+                    <Check className="w-4 h-4" />
+                    Concluir
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="gap-2 text-red-600 border-red-200"
+                    disabled={a.status !== "AGENDADO"}
+                    onClick={() => handleCancelar(a.id)}
+                  >
+                    <X className="w-4 h-4" />
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
       </main>
     </div>
   );

@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 import { DateTime } from 'luxon';
-import { not } from 'rxjs/internal/util/not';
 
 const TZ = 'America/Sao_Paulo';
 

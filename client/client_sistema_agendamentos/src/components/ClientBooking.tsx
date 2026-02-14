@@ -73,7 +73,7 @@ export function ClientBooking({ onBack }: ClientBookingProps) {
         (async () => {
             try {
                 setLoadingServices(true);
-                const res = await api.get<Service[]>("agendamentos/servicos");
+                const res = await api.get<Service[]>("/agendamentos/servicos");
                 setServices(res.data);
             } catch (e) {
                 toast.error("Falha ao carregar serviços.");

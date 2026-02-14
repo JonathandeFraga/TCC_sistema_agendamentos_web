@@ -51,7 +51,7 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
       });
 
       sessionStorage.setItem("access_token", response.data.accessToken);
-      toast.success(`Bem vinda, ${response.data.nome}.`);
+      toast.success(`Bem vindo(a), ${response.data.nome}.`);
       onLogin();
       
     } catch (err) {

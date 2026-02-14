@@ -22,11 +22,4 @@ export class LoginProfissionalService {
             select: { id: true, fone: true, nome: true },
         });
     }
-
-    /*
-    async create (data: loginProfissionalDto) {
-        const newUser = await this.prisma.loginProfissional.create({
-            data
-        });
-    };*/
 }
