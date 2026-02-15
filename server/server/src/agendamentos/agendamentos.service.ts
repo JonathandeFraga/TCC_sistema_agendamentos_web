@@ -7,8 +7,8 @@ import { exists } from 'fs';
 const TZ = 'America/Sao_Paulo';
 
 const WINDOWS = [
-    { start: { h: 8, m: 0 }, end: { h: 12, m: 0 } },
-    { start: { h: 14, m: 0 }, end: { h: 18, m: 0 } },
+    { start: { h: 8, m: 0 }, end: { h: 11, m: 0 } },
+    { start: { h: 14, m: 0 }, end: { h: 19, m: 0 } },
 ];
 
 @Injectable()
