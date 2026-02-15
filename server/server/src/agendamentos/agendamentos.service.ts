@@ -2,7 +2,6 @@ import { Injectable, BadRequestException, ConflictException, ForbiddenException,
 import { PrismaService } from 'src/database/prisma.service';
 import { DateTime } from 'luxon';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { exists } from 'fs';
 
 const TZ = 'America/Sao_Paulo';
 
