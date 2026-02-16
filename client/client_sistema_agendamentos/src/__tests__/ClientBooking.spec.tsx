@@ -85,7 +85,7 @@ describe('ClientBooking', () => {
         await userEvent.click(await screen.findByText('18'));
         await userEvent.click(await screen.findByText('10:00'));
 
-        await userEvent.click(await screen.findByRole('button',{ name: /confirmar agendamento/i }));
+        await userEvent.click(await screen.findByRole('button',{ name: /Confirmar Agendamento/i }));
 
         await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
     });
@@ -105,11 +105,11 @@ describe('ClientBooking', () => {
         await userEvent.click(await screen.findByText('18'));
         await userEvent.click(await screen.findByText('10:00'));
 
-        await userEvent.click(await screen.findByRole('button', { name: /confimar agendamento/i }));
+        await userEvent.click(await screen.findByRole('button', { name: /Confirmar Agendamento/i }));
 
         await waitFor(() => {
             expect(api.post).toHaveBeenCalledWith(
-                'agendamentos', { servicoId: 1, data: '2026-02-18', hora: '10:00' },
+                '/agendamentos', { servicoId: 1, data: '2026-02-18', hora: '10:00' },
             );
         });
     });

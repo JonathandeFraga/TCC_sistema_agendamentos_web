@@ -38,8 +38,6 @@ export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
 
         setIsLoading(true);
 
-        console.log(`Fone: ${foneE164}, Senha: ${password}`);
-
         try {
           const response = await api.post<LoginResponse>('/auth/login', {
             tipo: "profissional",

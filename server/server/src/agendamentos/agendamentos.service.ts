@@ -160,7 +160,7 @@ export class AgendamentosService {
         if (await this.isHoliday(startLocal)) throw new BadRequestException('Sem agendamentos em feriados');
 
         if (!this.isWithinWindows(startLocal, endLocal)) {
-            throw new BadRequestException('Horário fora do atendimento (08-12, 14-18)');
+            throw new BadRequestException('Horário fora do atendimento (08-11, 14-19)');
         }
 
         const inicioUtc = startLocal.toUTC().toJSDate();

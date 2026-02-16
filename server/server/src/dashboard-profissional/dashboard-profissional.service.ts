@@ -129,7 +129,7 @@ export class DashboardProfissionalService {
         return grouped.map((g) => ({
             name: mapNome.get(g.servicoId) ?? `Serviço ${g.servicoId}`,
             value: g._count.servicoId ?? 0,
-            percent: ((g._count.servicoId ?? 0) / total) * 100,
+            percent: ((g._count.servicoId ?? 0) / total),
         }));
     }
 
