@@ -26,22 +26,58 @@ export class DashboardProfissionalService {
     constructor(private readonly prisma: PrismaService) {}
 
     async agenda(from?: string, to?: string) {
-        const { startUtc, endUtc } = parseRange(from, to);
+    const { startUtc, endUtc } = parseRange(from, to);
 
-        return this.prisma.agendamentos.findMany({
-            where: {
-                inicio: { gte: startUtc, lte: endUtc },
-            },
-            orderBy: { inicio: 'asc' },
-            select: {
-                id: true,
-                status: true,
-                inicio: true,
-                fim: true,
-                cliente: { select: { id: true, nome: true, fone: true } },
-                servico: { select: { id: true, nome: true, duracaoMin: true, custoCent: true } }
-            },
-        });
+    const rows = await this.prisma.$queryRaw<
+        Array<{
+        id: number;
+        status: 'AGENDADO' | 'CONCLUIDO' | 'CANCELADO';
+        inicio: Date;
+        fim: Date;
+        clienteId: number;
+        clienteNome: string;
+        clienteFone: string;
+        servicoId: number;
+        servicoNome: string;
+        servicoDuracaoMin: number;
+        servicoCustoCent: number;
+        }>
+    >`
+        SELECT
+        a."id",
+        a."status",
+        a."inicio",
+        a."fim",
+        c."id"   AS "clienteId",
+        c."nome" AS "clienteNome",
+        c."fone" AS "clienteFone",
+        s."id"   AS "servicoId",
+        s."nome" AS "servicoNome",
+        s."duracaoMin" AS "servicoDuracaoMin",
+        s."custoCent"  AS "servicoCustoCent"
+        FROM "agendamentos" a
+        JOIN "loginCliente" c ON c."id" = a."clienteId"
+        JOIN "servicos" s     ON s."id" = a."servicoId"
+        WHERE a."inicio" >= ${startUtc}
+        AND a."inicio" <= ${endUtc}
+        ORDER BY
+        CASE a."status"
+            WHEN 'AGENDADO' THEN 1
+            WHEN 'CONCLUIDO' THEN 2
+            WHEN 'CANCELADO' THEN 3
+            ELSE 99
+        END ASC,
+        a."inicio" ASC
+    `;
+
+    return rows.map((r) => ({
+        id: r.id,
+        status: r.status,
+        inicio: r.inicio,
+        fim: r.fim,
+        cliente: { id: r.clienteId, nome: r.clienteNome, fone: r.clienteFone },
+        servico: { id: r.servicoId, nome: r.servicoNome, duracaoMin: r.servicoDuracaoMin, custoCent: r.servicoCustoCent },
+    }));
     }
 
     async resumoKPIs() {
@@ -83,27 +119,56 @@ export class DashboardProfissionalService {
     }
 
     async agendamentosPorDiaSemana() {
-        const endLocal = DateTime.now().setZone(TZ).endOf('day');
-        const startLocal = endLocal.minus({ days: 6 }).startOf('day');
+        const today = DateTime.now().setZone(TZ).startOf('day');
+        const endLocal = today.plus({ days: 6 }).endOf('day');
 
-        const rows = await this.prisma.$queryRaw<Array<{ day: string; count: number; d: string }>>`
-            SELECT
-                to_char(d, 'DY') AS "day",
-                count(*)::int AS "count",
-                to_char(d, 'YYYY-MM-DD') AS "d"
-            FROM (
+        const startUtc = today.toUTC().toJSDate();
+        const endUtc = endLocal.toUTC().toJSDate();
+
+        const rows = await this.prisma.$queryRaw<
+            Array<{ d: string; count: number }>
+        >`
+            WITH tz AS (SELECT ${TZ}::text AS tz),
+            days AS (
+                SELECT gs::date AS d
+                FROM generate_series(
+                    ${today.toISODate()}::date,
+                    ${endLocal.toISODate()}::date,
+                    interval '1 day'
+                ) gs
+                WHERE extract(isodow from gs)::int NOT IN (1, 7)
+                    AND NOT EXISTS (
+                        SELECT 1 FROM "feriados" f
+                        WHERE f."data" = gs::date
+                    ) 
+            ),
+            agg AS (
                 SELECT
-                    (((a."inicio" AT TIME ZONE 'UTC') AT TIME ZONE ${TZ})::date) AS d
+                    (a."inicio" AT TIME ZONE (SELECT tz FROM tz))::date AS d,
+                    count(*)::int AS "count"
                 FROM "agendamentos" a
-                WHERE a."inicio" >= ${startLocal.toUTC().toJSDate()}
-                    AND a."inicio" <= ${endLocal.toUTC().toJSDate()}
-                    AND a."status" = 'AGENDADO'
-            ) x
-            GROUP BY d
-            ORDER BY d ASC
+                WHERE a."inicio" >= ${startUtc}
+                    AND a."inicio" <= ${endUtc}
+                    AND a."status" IN ('AGENDADO')
+                GROUP BY (a."inicio" AT TIME ZONE (SELECT tz FROM tz))::date
+            )
+            SELECT
+                to_char(days.d, 'YYYY-MM-DD') AS d,
+                COALESCE(agg."count", 0)::int AS "count"
+            FROM days
+            LEFT JOIN agg USING (d)
+            ORDER BY days.d ASC
         `;
 
-        return rows.map((r) => ({ day: r.day.trim(), agendamentos: r.count }));
+        return rows.map((r) => {
+            const dt = DateTime.fromISO(r.d, { zone: TZ });
+            return {
+                label: dt.toFormat('dd-MM'),
+                day: dt.toFormat('ccc'),
+                agendamentos: r.count,
+                date: r.d,
+            };
+        });
     }
 
     async servicosMaisPopulares(from?: string, to?: string) {

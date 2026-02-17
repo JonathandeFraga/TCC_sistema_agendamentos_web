@@ -250,9 +250,12 @@ export function ProfessionalDashboard({ onBack }: ProfessionalDashboardProps) {
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={appointmentsByDay}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
+                <XAxis dataKey="label" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip 
+                  formatter={(value) => [value, "Agendamentos"]}
+                  labelFormatter={(_, payload) => payload?.[0]?.payload?.date ?? ""}
+                />
                 <Bar dataKey="agendamentos" fill="#ec4899" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
