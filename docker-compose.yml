@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: tcc_db
+    environment:
+      POSTGRES_USER: tcc
+      POSTGRES_PASSWORD: tcc
+      POSTGRES_DB: tcc_agendamentos
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tcc -d tcc_agendamentos"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  server:
+    build:
+      context: ./server/server
+      dockerfile: Dockerfile
+    container_name: tcc_server
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      WEB_ORIGIN: "http//localhost:8080"
+      DATABASE_URL: "postgresql://tcc:tcc@db:5432/tcc_agendamentos?schema=public"
+      JWT_ACCESS_SECRET: "TROCAR EM PRODUÇÃO"
+      JWT_ACCESS_TTL: "15m"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  web:
+    build:
+      context: ./client/client_sistema_agendamentos
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "http://localhost:3000"
+    container_name: tcc_web
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+
+volumes:
+  db_data:
