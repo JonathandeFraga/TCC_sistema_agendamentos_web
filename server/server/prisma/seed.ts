@@ -31,6 +31,11 @@ function nextValidDays(from: DateTime, count: number, holidaySet: Set<string>): 
     return out;
 }
 
+function atLocal(d: DateTime, hhmm: string): DateTime {
+    const [h, m] = hhmm.split(':').map(Number);
+    return d.set({ hour: h, minute: m, second: 0, millisecond: 0 });
+}
+
 function safeSlotForDuration(slot: string, durMin: number): string {
     if (durMin >= 120) {
         if (slot === '10:30' || slot === '11:00') return '09:00';
@@ -109,7 +114,8 @@ async function main() {
         { fone: '+5551999999994', nome: 'Cliente FFF' },
     ];
 
-    const clientes = [];
+    type ClienteType = { id: number; fone: string; nome: string };
+    const clientes: ClienteType[] = [];
     for (const c of clientesSeed) {
         const cli = await prisma.loginCliente.upsert({
             where: { fone: c.fone },
@@ -121,4 +127,86 @@ async function main() {
     }
 
     // 4. Agendamentos
+    const now = DateTime.now().setZone(TZ);
+    const futureDays = nextValidDays(now.plus({ days: 1 }), 10, holidaySet);
+    const pastDays = nextValidDays(now.minus({ days: 14 }), 6, holidaySet);
+
+    const slotsMorning = ['08:00', '09:15', '10:30'];
+    const slotsAfternoon = ['14:00', '15:15', '16:30', '17:00'];
+
+    const fromUtc = pastDays[0].startOf('day').toUTC().toJSDate();
+    const toUtc = futureDays[futureDays.length - 1].plus({ days: 1 }).startOf('day').toUTC().toJSDate();
+
+    await prisma.agendamentos.deleteMany({
+        where: {
+            profissionalId: profissional.id,
+            inicio: { gte: fromUtc, lt: toUtc },
+        },
+    });
+
+    for (let i = 0; i < futureDays.length; i++) {
+        const d = futureDays[i];
+        const cli = clientes[i % clientes.length];
+        const serv = servicos[i % servicos.length];
+
+        const rawSlot = i % 2 === 0? slotsMorning[i % slotsMorning.length] : slotsAfternoon[i % slotsAfternoon.length];
+        const slot = safeSlotForDuration(rawSlot, serv.duracaoMin);
+
+        const startLocal = atLocal(d, slot);
+        const endLocal = startLocal.plus({ minutes: serv.duracaoMin });
+
+        await prisma.agendamentos.create({
+            data: {
+                clienteId: cli.id,
+                profissionalId: profissional.id,
+                servicoId: serv.id,
+                inicio: startLocal.toUTC().toJSDate(),
+                fim: endLocal.toUTC().toJSDate(),
+                status: BookingStatus.AGENDADO,
+                custoCentSnap: serv.custoCent,
+                duracaoMinSnap: serv.duracaoMin,
+            },
+        });
+    }
+
+    for (let i = 0; i < pastDays.length; i++) {
+        const d = pastDays[i];
+        const cli = clientes[(i + 2) % clientes.length];
+        const serv = servicos[(i + 3) % servicos.length];
+
+        const rawSlot = i % 2 === 0 ? '09:00' : '14:00';
+        const slot = safeSlotForDuration(rawSlot, serv.duracaoMin);
+
+        const startLocal = atLocal(d, slot);
+        const endLocal = startLocal.plus({ minutes: serv.duracaoMin });
+
+        const status = i % 3 === 0 ? BookingStatus.CANCELADO : BookingStatus.CONCLUIDO;
+
+        await prisma.agendamentos.create({
+            data: {
+                clienteId: cli.id,
+                profissionalId: profissional.id,
+                servicoId: serv.id,
+                inicio: startLocal.toUTC().toJSDate(),
+                fim: endLocal.toUTC().toJSDate(),
+                status,
+                custoCentSnap: serv.custoCent,
+                duracaoMinSnap: serv.duracaoMin,
+                canceledAt: status === BookingStatus.CANCELADO ? now.toUTC().toJSDate() : null,
+                concludedAt: status === BookingStatus.CONCLUIDO ? endLocal.toUTC().toJSDate() : null,
+            },
+        });
+    }
+
+    console.log('Seed concluído ✅');
+    console.log('Credenciais para avaliação: ');
+    console.log(`PROFISSIONAL: fone=${profFone} senha=${senhaPadrao}`);
+    console.log(`CLIENTE (ex): fone=${clientesSeed[0].fone} senha=${senhaPadrao}`);
 }
+
+main().catch((e) => {
+    console.error(e);
+    process.exit(1)
+}).finally(async () => {
+    await prisma.$disconnect();
+});
