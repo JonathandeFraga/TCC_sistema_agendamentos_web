@@ -26,7 +26,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      WEB_ORIGIN: "http//localhost:8080"
+      WEB_ORIGIN: "http://localhost:8080"
       DATABASE_URL: "postgresql://tcc:tcc@db:5432/tcc_agendamentos?schema=public"
       JWT_ACCESS_SECRET: "TROCAR EM PRODUÇÃO"
       JWT_ACCESS_TTL: "15m"
