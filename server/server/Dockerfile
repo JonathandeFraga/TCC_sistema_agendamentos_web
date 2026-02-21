@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     COPY . .
 
 # Prisma client e build do Nest
-RUN npx prisma generate
+RUN npm ci
+RUN npx prisma@5.18.0 generate
 RUN npm run build
 
 # -----------------------------
@@ -21,7 +22,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=builder /app/package*.json ./
-RUN npm ci --omit=dev
 
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/dist ./dist

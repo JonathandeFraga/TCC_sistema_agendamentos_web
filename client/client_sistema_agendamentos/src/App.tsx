@@ -15,7 +15,7 @@ function App() {
 
   const handleSelectUserType = (type: 'professional' | 'client') => {
     setUserType(type);
-    if (type === 'professional') {
+    if (userType === 'professional') {
       setView('professional-login');
     } else {
       setView('client-login')
