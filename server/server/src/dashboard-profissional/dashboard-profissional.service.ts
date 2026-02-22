@@ -218,7 +218,7 @@ export class DashboardProfissionalService {
         `;
 
         const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-        const map = new Map(rows.map((r) => [r.month, r.revenueCent]));
+        const map = new Map<number, number>(rows.map((r) => [r.month, r.revenueCent]));
 
         return months.map((label, idx) => ({
             month: label,
