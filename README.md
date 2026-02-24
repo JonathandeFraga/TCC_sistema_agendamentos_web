@@ -53,6 +53,16 @@ Para avaliação, rodar com Docker Compose (evita instalar dependências localme
     - No frontend, a URL da API é injetada no build via build-arg:
         - VITE_API_URL=http://localhost:3000
 
+- Testes automatizados (via Docker)
+    - O projeto possui:
+        - Server (NestJS): testes com Jest
+        - Client (React/Vite): testes com Vitest
+    - Para execução dos testes, use os comandos abaixo:
+        - Rodar testes do Server (Jest):
+            - docker compose --profile test run --rm server-test
+        - Rodar testes do Client (Vitest) em modo verboso (saída padrão acaba omitindo resultado de alguns testes):
+            - docker compose --profile test run --rm web-test npm test -- --run --reporter=verbose
+
 - Parando o container da aplicação web:
     - Na raiz do repositório (no local do arquivo docker-compose.yml) abra o Windows PowerShell e rode:
         - docker compose down

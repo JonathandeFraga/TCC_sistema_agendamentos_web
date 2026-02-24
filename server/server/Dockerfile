@@ -12,6 +12,10 @@ COPY prisma ./prisma
 COPY . .
 RUN npm run build
 
+FROM builder AS test
+ENV NODE_ENV=test
+CMD ["npm", "test"]
+
 # -----------------------------
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app

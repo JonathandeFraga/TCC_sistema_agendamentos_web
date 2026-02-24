@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:16-alpine
@@ -47,6 +45,29 @@ services:
       - "8080:80"
     depends_on:
       - server
+
+  server-test:
+    build:
+      context: ./server/server
+      dockerfile: Dockerfile
+      target: test
+    environment:
+      NODE_ENV: test
+      JWT_ACCESS_SECRET: "JWukGYkJukZAhIudjwq1jB6i2VhHr70Scjxii7U3cNl"
+      JWT_ACCESS_TTL: "900"
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["test"]
+
+  web-test:
+    build:
+      context: ./client/client_sistema_agendamentos
+      dockerfile: Dockerfile
+      target: test
+      args:
+        VITE_API_URL: "http://localhost:3000"
+    profiles: ["test"]
 
 volumes:
   db_data:
