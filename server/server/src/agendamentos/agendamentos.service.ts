@@ -156,7 +156,7 @@ export class AgendamentosService {
         const endLocal = startLocal.plus({ minutes: servico.duracaoMin });
 
         const weekday = startLocal.weekday;
-        if (weekday === 1 || weekday === 7) throw new BadRequestException('Sem agendamentos em doming/segunda');
+        if (weekday === 1 || weekday === 7) throw new BadRequestException('Sem agendamentos em domingo/segunda');
         if (await this.isHoliday(startLocal)) throw new BadRequestException('Sem agendamentos em feriados');
 
         if (!this.isWithinWindows(startLocal, endLocal)) {
