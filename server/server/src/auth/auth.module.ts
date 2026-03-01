@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { LoginClienteModule } from 'src/login-cliente/login-cliente.module';
 import { LoginProfissionalModule } from 'src/login-profissional/login-profissional.module';
+import { PrismaService } from 'src/database/prisma.service';
 
 @Module({
     imports: [
@@ -18,6 +19,6 @@ import { LoginProfissionalModule } from 'src/login-profissional/login-profission
         LoginClienteModule,
     ],
     controllers: [AuthController],
-    providers: [AuthService, JwtStrategy],
+    providers: [AuthService, JwtStrategy, PrismaService],
 })
 export class AuthModule {}

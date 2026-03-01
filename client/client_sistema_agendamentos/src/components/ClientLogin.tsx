@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { api } from "../lib/api";
 import axios from "axios";
 import { normalizeBrMobileToE164 } from "../utils/phone";
+import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
 
 interface ClientLoginProps {
   onBack: () => void;
@@ -27,6 +28,7 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,7 +196,12 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
                 </Button>
 
                 <div className="text-center">
-                  <button type="button" className="text-pink-600 hover:underline">
+                  <button
+                    type="button"
+                    className="text-pink-600 hover:underline"
+                    onClick={() => setShowForgot(true)}
+                    disabled={isLoading}
+                  >
                     Esqueceu sua senha?
                   </button>
                 </div>
@@ -268,6 +275,8 @@ export function ClientLogin({ onBack, onLogin }: ClientLoginProps) {
           </Tabs>
         </Card>
       </div>
+
+      {showForgot && <ForgotPasswordDialog tipo="cliente" onClose={() => setShowForgot(false)} />}
     </div>
   );
 }

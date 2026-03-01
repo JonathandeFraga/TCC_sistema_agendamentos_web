@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { api } from "../lib/api";
 import axios from "axios";
 import { normalizeBrMobileToE164 } from "../utils/phone";
+import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
 
 interface ProfessionalLoginProps {
   onBack: () => void;
@@ -21,6 +22,7 @@ export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [showForgot, setShowForgot] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -134,12 +136,19 @@ export function ProfessionalLogin({ onBack, onLogin }: ProfessionalLoginProps) {
             </form>
 
             <div className="text-center">
-              <button className="text-purple-600 hover:underline">
+              <button
+                type="button"
+                className="text-purple-600 hover:underline"
+                onClick={() => setShowForgot(true)}
+                disabled={isLoading}
+              >
                 Esqueceu sua senha?
               </button>
             </div>
           </Card>
         </div>
+
+        {showForgot && <ForgotPasswordDialog tipo="profissional" onClose={() => setShowForgot(false)} />}
       </div> 
     );
 }

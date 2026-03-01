@@ -22,4 +22,11 @@ export class LoginProfissionalService {
             select: { id: true, fone: true, nome: true },
         });
     }
+
+    async updateSenhaById(id: number, senhaHash: string) {
+        return this.prisma.loginProfissional.update({
+            where: { id },
+            data: { senha: senhaHash },
+        });
+    }
 }
